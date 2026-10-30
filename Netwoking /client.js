@@ -1,35 +1,28 @@
 import dgram from "node:dgram";
-import  {createReadStream} from "node:fs";
-import {readFile} from "node:fs/promises";
+import { createReadStream, existsSync } from "node:fs";
 
-const socket= dgram.createSocket("udp4");
+const socket = dgram.createSocket("udp4");
 
+socket.on("message", (message, remoteAddress) => {
+    console.log(message.toString());
+    console.log(remoteAddress);
+});
 
-
-socket.on("message", (message, remoteAddress) =>{
-    console.log(message.toString())
-    console.log(remoteAddress)
-
-})
-socket.send("Hi from Lap" , 4000, "192.168.87.41")
+socket.send("Hi from Lap", 4000, "127.0.0.1");
 
 //........
-socket.on("message", (message , remoteAddress) =>{
-    console.log(message.toString());
-    console.log(remoteAddress)
-    socket.close();
-})
+const filePath = existsSync("numbers.txt") ? "numbers.txt" : "chars.txt";
 
-const readStream = createReadStream(
-    "path",
-    {highWaterMark : 1000}
-);
+if (existsSync(filePath)) {
+    const readStream = createReadStream(filePath, { highWaterMark: 1000 });
 
-readStream.on("data" , (chunk) =>{
-    socket.send(chunk , 400 , "192.168.0,105");
-})
-readStream.on("end" , () =>{
-    socket.send("EOF" , 4000 , "192.168.0.105" , () =>{
-        console.log("message sent")
-    })
-})
+    readStream.on("data", (chunk) => {
+        socket.send(chunk, 4000, "127.0.0.1");
+    });
+
+    readStream.on("end", () => {
+        socket.send("EOF", 4000, "127.0.0.1", () => {
+            console.log("message sent");
+        });
+    });
+}
